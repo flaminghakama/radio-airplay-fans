@@ -10,7 +10,7 @@ var getFanInfo = function(fan) {
 
     var fanInfoDiv,
         image,
-        fanLink,
+        fanLinks,
         fanTexts, 
         heard, 
         song, 
@@ -33,52 +33,80 @@ var getFanInfo = function(fan) {
     image = fanInfoDiv.getElementsByTagName('IMG')[0] ;
     if ( image === undefined ) { 
         console.log("Fan didn't have image") ; 
-        return ; 
     }
     if ( image.alt !== 'Green_thumb_10x13' ) { 
         console.log("Fan image wasn't green thumb.") ; 
-        return ; 
     } 
 
-    fanLink = fanInfoDiv.getElementsByTagName('A')[0] ; 
-    if ( fanLink.className !== 'fb_exit_link' ) { 
-        console.log('link was not fb link') ; 
-        return ; 
-    } 
-    fanInfo.url = fanLink.href ; 
+    fanLinks = fanInfoDiv.getElementsByTagName('A') ; 
+    if ( fanLinks.length > 0 ) { 
+        fanLink = fanInfoDiv.getElementsByTagName('A')[0] ; 
+        if ( fanLink.className !== 'fb_exit_link' ) { 
+            fanInfo.url = 'no fb link' ; 
+        } 
+        fanInfo.url = fanLink.href ; 
+    } else { 
+        fanInfo.url = 'no fb link' ;  
+    }
 
-    fanTexts = fanLink.innerHTML.split('</span>') ; 
-    if ( fanTexts.length < 2 ) { 
-        console.log("Fan didn't have enough spans.") ; 
-        return ; 
-    } 
-    fanInfo.name = fanTexts[1] ; 
+    if ( fanLink.innerHTML !== undefined ) { 
+        fanTexts = fanLink.innerHTML.split('</span>') ; 
+        if ( fanTexts.length < 2 ) { 
+            fanInfo.name = fanLink.innerHTML ; 
+        } else {
+            fanInfo.name = fanTexts[1] ; 
+        } 
+    } else {
+        fanInfo.name = 'no fan link' ; 
+    }
 
     heard = fanInfoDiv.innerHTML.split('Heard')[1] ; 
     song = heard.split('">"')[1].split('"')[0] ; 
-    playing = heard.split(' playing in a station with ')[1] ; 
+    if ( heard.match(' playing in a station with ') ) { 
+        playing = heard.split(' playing in a station with ')[1] ; 
+    } else {
+        playing = heard.split(' playing in ')[1] ; 
+    }
     station = playing.split('<br>')[0].trim().replace('&amp;', '&') ; 
     date = fanInfoDiv.getElementsByClassName('time_ago')[0].title ; 
     fanInfo.heard.push( makeHeardInfo( song, station, date ) ); 
-
     fanInfo.location = playing.split('<span')[1].split('>')[1].split('>')[0].split('<')[0].trim() ; 
 
     return fanInfo ; 
 }
 
-var showFanInfo = function(fan) { 
-    console.log(fan.name + 
-        ' in ' + fan.location +
-        ' at ' + fan.url +   
-        ' heard ' + fan.heard[0].song + 
-        ' in the ' + fan.heard[0].station + 
-        ' station on ' + fan.heard[0].date) ; 
+var showFanTitles = function(fan) { 
+    console.log([
+        'Fan  Name',
+        'Location',
+        'URL',   
+        'Song Heard', 
+        'Station', 
+        'Date'
+        ].join("\t")) ; 
  }
+
+var showFanInfo = function(fan) { 
+    console.log([
+        fan.name,
+        fan.location,
+        fan.url,   
+        fan.heard[0].song, 
+        fan.heard[0].station, 
+        fan.heard[0].date
+        ].join("\t")) ; 
+ }
+
 
 var fans = document.querySelectorAll('.feed_item_wrapper.fan_item .floater') ; 
 
+showFanTitles() ; 
 for (var i = fans.length - 1; i >= 0; i--) {
     fan = fans[i] ; 
     fanInfo = getFanInfo(fan) ;
-    showFanInfo(fanInfo) ;  
+    if ( fanInfo !== undefined ) { 
+        showFanInfo(fanInfo) ; 
+    } else {
+        console.log("Didn't get info for fan " + i) ; 
+    } 
 };
